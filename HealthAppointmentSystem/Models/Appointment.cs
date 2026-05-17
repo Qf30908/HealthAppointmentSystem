@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using HealthAppointmentSystem.Enums;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HealthAppointmentSystem.Models
 {
@@ -6,8 +7,8 @@ namespace HealthAppointmentSystem.Models
     {
         public Guid Id { get; set; }
         public DateTime AppointmentDate { get; set; }
-        public string Status { get; set; }
-        public string Notes { get; set; }
+        public AppointmentStatus Status { get; set; }
+        public string Reason { get; set; }
 
 
         public Guid DoctorId { get; set; }
