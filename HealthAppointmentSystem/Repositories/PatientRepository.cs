@@ -1,4 +1,4 @@
-﻿using HealthAppointmentSystem.Data;
+using HealthAppointmentSystem.Data;
 using HealthAppointmentSystem.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,53 +23,54 @@ namespace HealthAppointmentSystem.Repositories
         public async Task<bool> DeleteAsync(Guid id)
         {
             var patient = await _context.Patients.FindAsync(id);
-
             if (patient == null)
                 return false;
 
+            var user = await _context.Users.FindAsync(patient.UserId);
             _context.Patients.Remove(patient);
-            await _context.SaveChangesAsync();
 
+            if (user != null)
+                _context.Users.Remove(user);
+
+            await _context.SaveChangesAsync();
             return true;
         }
 
         public async Task<IEnumerable<Patient>> GetAllAsync()
         {
             return await _context.Patients
-                .Include(p => p.Appointments) 
+                .AsNoTracking()
+                .Include(p => p.Appointments)
                 .ToListAsync();
         }
 
-        public async Task<Patient> GetByIdAsync(Guid id)
+        public async Task<Patient?> GetByIdAsync(Guid id)
         {
             return await _context.Patients
                 .Include(p => p.Appointments)
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 
+        public async Task<Patient?> GetByUserIdAsync(Guid userId)
+        {
+            return await _context.Patients.FirstOrDefaultAsync(p => p.UserId == userId);
+        }
+
         public async Task<bool> UpdateAsync(Guid id, Patient patient)
         {
             var existingPatient = await _context.Patients.FindAsync(id);
-
             if (existingPatient == null)
-                return await Task.FromResult(false);
+                return false;
 
             existingPatient.FullName = patient.FullName;
             existingPatient.Email = patient.Email;
             existingPatient.PhoneNumber = patient.PhoneNumber;
             existingPatient.DateOfBirth = patient.DateOfBirth;
-
             existingPatient.UpdatedBy = patient.UpdatedBy;
             existingPatient.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-
-            return await Task.FromResult(true);
-        }
-
-        public async Task SaveChanges()
-        {
-            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

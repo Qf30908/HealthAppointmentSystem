@@ -1,4 +1,4 @@
-﻿using HealthAppointmentSystem.Data;
+using HealthAppointmentSystem.Data;
 using HealthAppointmentSystem.Enums;
 using HealthAppointmentSystem.Models;
 using Microsoft.EntityFrameworkCore;
@@ -17,12 +17,13 @@ namespace HealthAppointmentSystem.Repositories
         public async Task<IEnumerable<Appointment>> GetAllAsync()
         {
             return await _context.Appointments
+                .AsNoTracking()
                 .Include(a => a.Doctor)
                 .Include(a => a.Patient)
                 .ToListAsync();
         }
 
-        public async Task<Appointment> GetByIdAsync(Guid id)
+        public async Task<Appointment?> GetByIdAsync(Guid id)
         {
             return await _context.Appointments
                 .Include(a => a.Doctor)
@@ -33,6 +34,7 @@ namespace HealthAppointmentSystem.Repositories
         public async Task<IEnumerable<Appointment>> GetByDoctorIdAsync(Guid doctorId)
         {
             return await _context.Appointments
+                .AsNoTracking()
                 .Where(a => a.DoctorId == doctorId)
                 .Include(a => a.Patient)
                 .ToListAsync();
@@ -41,6 +43,7 @@ namespace HealthAppointmentSystem.Repositories
         public async Task<IEnumerable<Appointment>> GetByPatientIdAsync(Guid patientId)
         {
             return await _context.Appointments
+                .AsNoTracking()
                 .Where(a => a.PatientId == patientId)
                 .Include(a => a.Doctor)
                 .ToListAsync();
@@ -49,27 +52,26 @@ namespace HealthAppointmentSystem.Repositories
         public async Task<bool> AddAsync(Appointment appointment)
         {
             var isAvailable = await IsDoctorAvailableAsync(appointment.DoctorId, appointment.AppointmentDate);
-
             if (!isAvailable)
                 return false;
 
             appointment.Status = AppointmentStatus.Pending;
             appointment.CreatedAt = DateTime.UtcNow;
+            appointment.UpdatedAt = DateTime.UtcNow;
 
             await _context.Appointments.AddAsync(appointment);
             await _context.SaveChangesAsync();
-
             return true;
         }
 
-        public async Task<bool> UpdateStatusAsync(Guid id, AppointmentStatus status)
+        public async Task<bool> UpdateStatusAsync(Guid id, AppointmentStatus status, Guid updatedBy)
         {
             var appointment = await _context.Appointments.FindAsync(id);
-
             if (appointment == null)
                 return false;
 
             appointment.Status = status;
+            appointment.UpdatedBy = updatedBy;
             appointment.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -79,22 +81,32 @@ namespace HealthAppointmentSystem.Repositories
         public async Task<bool> DeleteAsync(Guid id)
         {
             var appointment = await _context.Appointments.FindAsync(id);
-
             if (appointment == null)
                 return false;
 
             _context.Appointments.Remove(appointment);
             await _context.SaveChangesAsync();
-
             return true;
         }
 
         public async Task<bool> IsDoctorAvailableAsync(Guid doctorId, DateTime dateTime)
         {
+            var doctor = await _context.Doctors.FindAsync(doctorId);
+            if (doctor == null || !doctor.IsAvailable)
+                return false;
+
+            //var conflict = await _context.Appointments.AnyAsync(a =>
+            //    a.DoctorId == doctorId &&
+            //    a.AppointmentDate == dateTime &&
+            //    a.Status != AppointmentStatus.Cancelled);
+
+            var newAppointmentEnd = dateTime.AddHours(0.5);
+
             var conflict = await _context.Appointments.AnyAsync(a =>
                 a.DoctorId == doctorId &&
-                a.AppointmentDate == dateTime &&
-                a.Status != AppointmentStatus.Cancelled
+                a.Status != AppointmentStatus.Cancelled &&
+                dateTime < a.AppointmentDate.AddHours(0.5) &&
+                newAppointmentEnd > a.AppointmentDate
             );
 
             return !conflict;

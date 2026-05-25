@@ -1,4 +1,4 @@
-﻿using HealthAppointmentSystem.Enums;
+using HealthAppointmentSystem.Enums;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HealthAppointmentSystem.Models
@@ -8,14 +8,16 @@ namespace HealthAppointmentSystem.Models
         public Guid Id { get; set; }
         public DateTime AppointmentDate { get; set; }
         public AppointmentStatus Status { get; set; }
-        public string Reason { get; set; }
-
+        public string Reason { get; set; } = string.Empty;
 
         public Guid DoctorId { get; set; }
-        [ForeignKey("DoctorId")]
+
+        [ForeignKey(nameof(DoctorId))]
         public virtual Doctor? Doctor { get; set; }
+
         public Guid PatientId { get; set; }
-        [ForeignKey("PatientId")]
+
+        [ForeignKey(nameof(PatientId))]
         public virtual Patient? Patient { get; set; }
 
         public Guid CreatedBy { get; set; }

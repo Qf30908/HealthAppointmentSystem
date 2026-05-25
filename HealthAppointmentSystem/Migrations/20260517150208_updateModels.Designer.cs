@@ -4,6 +4,7 @@ using HealthAppointmentSystem.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HealthAppointmentSystem.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260517150208_updateModels")]
+    partial class updateModels
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -124,13 +127,7 @@ namespace HealthAppointmentSystem.Migrations
                     b.Property<Guid>("UpdatedBy")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
 
                     b.ToTable("Doctors");
                 });
@@ -208,13 +205,7 @@ namespace HealthAppointmentSystem.Migrations
                     b.Property<Guid>("UpdatedBy")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
 
                     b.ToTable("Patients");
                 });
@@ -238,17 +229,6 @@ namespace HealthAppointmentSystem.Migrations
                     b.Navigation("Patient");
                 });
 
-            modelBuilder.Entity("HealthAppointmentSystem.Models.Doctor", b =>
-                {
-                    b.HasOne("HealthAppointmentSystem.AUTH.User", "User")
-                        .WithOne()
-                        .HasForeignKey("HealthAppointmentSystem.Models.Doctor", "UserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("HealthAppointmentSystem.Models.MedicalRecord", b =>
                 {
                     b.HasOne("HealthAppointmentSystem.Models.Patient", "Patient")
@@ -258,17 +238,6 @@ namespace HealthAppointmentSystem.Migrations
                         .IsRequired();
 
                     b.Navigation("Patient");
-                });
-
-            modelBuilder.Entity("HealthAppointmentSystem.Models.Patient", b =>
-                {
-                    b.HasOne("HealthAppointmentSystem.AUTH.User", "User")
-                        .WithOne()
-                        .HasForeignKey("HealthAppointmentSystem.Models.Patient", "UserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("HealthAppointmentSystem.Models.Doctor", b =>
