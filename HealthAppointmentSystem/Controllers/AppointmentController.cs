@@ -1,10 +1,13 @@
 using AutoMapper;
+using HealthAppointmentSystem.AUTH;
 using HealthAppointmentSystem.DTOs.Appointment;
 using HealthAppointmentSystem.Extensions;
 using HealthAppointmentSystem.Models;
 using HealthAppointmentSystem.Repositories;
+using HealthAppointmentSystem.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Numerics;
 
 namespace HealthAppointmentSystem.Controllers
 {
@@ -17,17 +20,20 @@ namespace HealthAppointmentSystem.Controllers
         private readonly IDoctorRepository _doctorRepository;
         private readonly IPatientRepository _patientRepository;
         private readonly IMapper _mapper;
+        private readonly IEmailService _emailService;
+
 
         public AppointmentController(
             IAppointmentRepository appointmentRepository,
             IDoctorRepository doctorRepository,
             IPatientRepository patientRepository,
-            IMapper mapper)
+            IMapper mapper, IEmailService emailService)
         {
             _appointmentRepository = appointmentRepository;
             _doctorRepository = doctorRepository;
             _patientRepository = patientRepository;
             _mapper = mapper;
+            _emailService = emailService;
         }
 
         [HttpGet]
@@ -93,18 +99,35 @@ namespace HealthAppointmentSystem.Controllers
             appointment.CreatedBy = userId.Value;
             appointment.UpdatedBy = userId.Value;
 
+            Patient patient = null;
+
             if (User.IsInRole("Patient"))
             {
-                var patient = await _patientRepository.GetByUserIdAsync(userId.Value);
+                patient = await _patientRepository.GetByUserIdAsync(userId.Value);
                 if (patient == null)
                     return NotFound("Patient profile not found");
 
                 appointment.PatientId = patient.Id;
             }
+            else
+            {
+                patient = await _patientRepository.GetByIdAsync(dto.PatientId);
+                if (patient == null)
+                    return NotFound("Patient not found");
+            }
 
             var created = await _appointmentRepository.AddAsync(appointment);
             if (!created)
-                return BadRequest("Doctor is not available at the selected time");
+                return BadRequest("Doctor is not available at the selected time / You can not make appointment at the past");
+
+            var doctor = await _doctorRepository.GetByIdAsync(appointment.DoctorId);
+            if (doctor == null)
+                return NotFound("Doctor not found");
+
+            await _emailService.SendEmailAsync(
+                patient.Email,
+                "Appointment Confirmation",
+                $"Your appointment with Dr. {doctor.FullName} has been scheduled for {appointment.AppointmentDate:dd/MM/yyyy HH:mm} until {appointment.AppointmentDate.AddMinutes(30):HH:mm}");
 
             return Ok(new
             {

@@ -24,3 +24,5 @@ namespace HealthAppointmentSystem.Models
         public DateTime UpdatedAt { get; set; }
     }
 }
+
+

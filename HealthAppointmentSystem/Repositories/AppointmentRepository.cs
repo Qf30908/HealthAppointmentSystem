@@ -51,9 +51,14 @@ namespace HealthAppointmentSystem.Repositories
 
         public async Task<bool> AddAsync(Appointment appointment)
         {
+            if (appointment.AppointmentDate < DateTime.UtcNow)
+                return false;
+            if (appointment.AppointmentDate.Minute != 0 && appointment.AppointmentDate.Minute != 30)
+                throw new Exception("The minutes of appointment should be 00 or 30!");
             var isAvailable = await IsDoctorAvailableAsync(appointment.DoctorId, appointment.AppointmentDate);
             if (!isAvailable)
                 return false;
+            
 
             appointment.Status = AppointmentStatus.Pending;
             appointment.CreatedAt = DateTime.UtcNow;
@@ -61,7 +66,8 @@ namespace HealthAppointmentSystem.Repositories
 
             await _context.Appointments.AddAsync(appointment);
             await _context.SaveChangesAsync();
-            return true;
+
+            return await Task.FromResult(true);
         }
 
         public async Task<bool> UpdateStatusAsync(Guid id, AppointmentStatus status, Guid updatedBy)
@@ -95,19 +101,13 @@ namespace HealthAppointmentSystem.Repositories
             if (doctor == null || !doctor.IsAvailable)
                 return false;
 
-            //var conflict = await _context.Appointments.AnyAsync(a =>
-            //    a.DoctorId == doctorId &&
-            //    a.AppointmentDate == dateTime &&
-            //    a.Status != AppointmentStatus.Cancelled);
-
-            var newAppointmentEnd = dateTime.AddHours(0.5);
-
             var conflict = await _context.Appointments.AnyAsync(a =>
                 a.DoctorId == doctorId &&
+                a.AppointmentDate == dateTime &&
                 a.Status != AppointmentStatus.Cancelled &&
-                dateTime < a.AppointmentDate.AddHours(0.5) &&
-                newAppointmentEnd > a.AppointmentDate
-            );
+                dateTime<a.AppointmentDate.AddMinutes(30));
+
+
 
             return !conflict;
         }

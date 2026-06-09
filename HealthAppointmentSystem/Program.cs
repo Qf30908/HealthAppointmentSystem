@@ -7,6 +7,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using Serilog;
+using Serilog.Events;
+using HealthAppointmentSystem.Models;
+using HealthAppointmentSystem.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -70,6 +74,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddSerilog((services, lc) => lc
+.MinimumLevel.Debug()
+    .WriteTo.File("log.txt")
+    .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
+    );
+
+
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection("EmailSettings"));
+
+builder.Services.AddScoped<IEmailService, EmailService>();
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -99,6 +115,7 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "Database migration or seed failed. Check SQL Server and connection string in appsettings.json.");
     }
 }
+
 
 if (app.Environment.IsDevelopment())
 {

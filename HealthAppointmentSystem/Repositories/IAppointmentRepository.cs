@@ -13,5 +13,6 @@ namespace HealthAppointmentSystem.Repositories
         Task<bool> UpdateStatusAsync(Guid id, AppointmentStatus status, Guid updatedBy);
         Task<bool> DeleteAsync(Guid id);
         Task<bool> IsDoctorAvailableAsync(Guid doctorId, DateTime dateTime);
+
     }
 }

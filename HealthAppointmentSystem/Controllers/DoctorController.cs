@@ -1,6 +1,7 @@
 using AutoMapper;
 using HealthAppointmentSystem.DTOs.Doctor;
 using HealthAppointmentSystem.Extensions;
+using HealthAppointmentSystem.Helpers;
 using HealthAppointmentSystem.Models;
 using HealthAppointmentSystem.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -15,11 +16,13 @@ namespace HealthAppointmentSystem.Controllers
     {
         private readonly IDoctorRepository _doctorRepository;
         private readonly IMapper _mapper;
+        private readonly ILogger<DoctorController> _logger;
 
-        public DoctorController(IDoctorRepository doctorRepository, IMapper mapper)
+        public DoctorController(IDoctorRepository doctorRepository, IMapper mapper, ILogger<DoctorController> logger)
         {
             _doctorRepository = doctorRepository;
             _mapper = mapper;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -34,9 +37,23 @@ namespace HealthAppointmentSystem.Controllers
         [Authorize(Roles = "Admin,Patient")]
         public async Task<IActionResult> GetAvailable()
         {
-            var doctors = await _doctorRepository.GetAllAsync();
-            var available = doctors.Where(d => d.IsAvailable);
-            return Ok(_mapper.Map<List<DoctorDto>>(available));
+            try
+            {
+                _logger.LogInformation("Action for GetAvailable");
+                var doctors = await _doctorRepository.GetAllAsync();
+                _logger.LogInformation("Repository is Successful!");
+                var available = doctors.Where(d => d.IsAvailable);
+                var doctorDto = _mapper.Map<List<DoctorDto>>(available);
+                _logger.LogInformation("Mapper is OK");
+                return Ok(doctorDto);
+            }
+
+            catch (Exception ex)
+            {
+
+                _logger.LogError(ex, "Error occurred");
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpGet("me")]
@@ -106,6 +123,26 @@ namespace HealthAppointmentSystem.Controllers
                 return NotFound("Doctor not found");
 
             return Ok("Doctor deleted successfully");
+        }
+
+        [HttpGet("Search")]
+        [AllowAnonymous]
+        public async Task<ActionResult> Search(int? pageNumber, int? pageSize, string? specialty, DateTime? fromDate, DateTime? toDate, string? searchTest, string? sortField, bool? sortOrder)
+        {
+            pageNumber = pageNumber ?? 0;
+            pageSize = pageSize ?? 10;
+
+            var doctorList = await _doctorRepository.SearchAsync(pageNumber.Value, pageSize.Value, specialty, fromDate, toDate, searchTest, sortField, sortOrder);
+            var totalItems = await _doctorRepository.TotalCountDoctors(specialty, fromDate, toDate, searchTest);
+            var totalPages = (double)totalItems / pageSize;
+
+            var resultModel = new PageModel<DoctorDto>();
+            resultModel.Items = _mapper.Map<List<DoctorDto>>(doctorList);
+            resultModel.PageNumber = pageNumber.Value;
+            resultModel.PageSize = pageSize.Value;
+            resultModel.TotalItems = totalItems;
+            resultModel.TotalPages = (int)Math.Ceiling(totalPages.Value);
+            return Ok(resultModel);
         }
     }
 }
