@@ -11,6 +11,7 @@ using Serilog;
 using Serilog.Events;
 using HealthAppointmentSystem.Models;
 using HealthAppointmentSystem.Services;
+using HealthAppointmentSystem.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +46,8 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddAutoMapper(typeof(Program));
+
+builder.Services.AddApplicationInsightsTelemetry();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -115,6 +118,9 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "Database migration or seed failed. Check SQL Server and connection string in appsettings.json.");
     }
 }
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 
 
 if (app.Environment.IsDevelopment())

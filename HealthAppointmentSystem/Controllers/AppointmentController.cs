@@ -5,6 +5,7 @@ using HealthAppointmentSystem.Extensions;
 using HealthAppointmentSystem.Models;
 using HealthAppointmentSystem.Repositories;
 using HealthAppointmentSystem.Services;
+using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Numerics;
@@ -21,27 +22,47 @@ namespace HealthAppointmentSystem.Controllers
         private readonly IPatientRepository _patientRepository;
         private readonly IMapper _mapper;
         private readonly IEmailService _emailService;
+        private readonly ILogger<AppointmentController> _logger;
+        private readonly TelemetryClient _telemetery;
 
 
         public AppointmentController(
             IAppointmentRepository appointmentRepository,
             IDoctorRepository doctorRepository,
             IPatientRepository patientRepository,
-            IMapper mapper, IEmailService emailService)
+            IMapper mapper, IEmailService emailService, ILogger<AppointmentController> logger, TelemetryClient telemetery)
         {
             _appointmentRepository = appointmentRepository;
             _doctorRepository = doctorRepository;
             _patientRepository = patientRepository;
             _mapper = mapper;
             _emailService = emailService;
+            _logger = logger;
+            _telemetery = telemetery;
+
         }
 
         [HttpGet]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAll()
         {
-            var appointments = await _appointmentRepository.GetAllAsync();
-            return Ok(_mapper.Map<List<AppointmentDto>>(appointments));
+            try
+            {
+                _telemetery?.TrackTrace("Action GetAllAppointments");
+                var appointments = await _appointmentRepository.GetAllAsync();
+                _telemetery?.TrackTrace("Repository is successful!");
+                var appointmentDtos = _mapper.Map<List<AppointmentDto>>(appointments);
+                _telemetery?.TrackTrace("Mapper is Ok");
+                return Ok(appointmentDtos);
+            }
+            catch (Exception ex)
+            {
+                _telemetery?.TrackException(ex);
+                _logger?.LogError(ex, "Error occurred");
+
+                return StatusCode(500, "Error occurred");
+            }
+            
         }
 
         [HttpGet("my")]
