@@ -127,7 +127,7 @@ namespace HealthAppointmentSystem.Controllers
             await _emailService.SendEmailAsync(
                 patient.Email,
                 "Appointment Confirmation",
-                $"Your appointment with Dr. {doctor.FullName} has been scheduled for {appointment.AppointmentDate:dd/MM/yyyy HH:mm} until {appointment.AppointmentDate.AddMinutes(30):HH:mm}");
+                $"{patient.FullName}: Your appointment with Dr. {doctor.FullName} has been scheduled for {appointment.AppointmentDate:dd/MM/yyyy HH:mm} until {appointment.AppointmentDate.AddMinutes(30):HH:mm}");
 
             return Ok(new
             {
