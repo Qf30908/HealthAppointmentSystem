@@ -67,12 +67,12 @@ Health Appointment System is a RESTful Web API developed using .NET 8 that enabl
 | .NET                  | 8.0     |
 | ASP.NET Core Web API  | 8.0     |
 | Entity Framework Core | 8.0     |
-| SQL Server            | Latest  |
-| AutoMapper            | Latest  |
-| JWT Authentication    | Latest  |
-| Serilog               | Latest  |
+| SQL Server            | 8.0     |
+| AutoMapper            | 12.0    |
+| JWT Authentication    | 8.0     |
+| Serilog               | 8.0     |
 | Swagger/OpenAPI       | Latest  |
-| xUnit                 | Latest  |
+| xUnit                 | 2.5     |
 | Moq                   | Latest  |
 
 ---
